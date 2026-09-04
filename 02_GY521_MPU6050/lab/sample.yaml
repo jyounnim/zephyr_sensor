@@ -1,0 +1,19 @@
+sample:
+  name: GY-521 (MPU-6050) dual-core (IPM, threshold+heartbeat) with SSD1306 on core1
+  description: >
+    core0 (procpu) reads the MPU-6050's accelerometer, gyroscope, and die
+    temperature every 100 ms in one thread over I2C0, converting to g and
+    deg/s. It pushes an IPM message to core1 immediately whenever the
+    accel or gyro vector magnitude moves past a threshold since the last
+    value actually sent (>=0.15g, >=15 deg/s), plus a 1 s heartbeat so the
+    link never looks stale while the board is still. core1 owns I2C1 and
+    an SSD1306 128x64 OLED exclusively, displays all 7 values plus link
+    health, redraws from an event-driven display thread woken by the IPM
+    callback, and declares the link down after 2 s without a message.
+    Built with --sysbuild.
+tests:
+  sample.sensor.gy521_mpu6050_dualcore:
+    build_only: true
+    sysbuild: true
+    platform_allow: esp32s3_devkitc/esp32s3/procpu
+    tags: sensor display i2c threads ipm multicore

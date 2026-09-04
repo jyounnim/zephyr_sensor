@@ -1,0 +1,61 @@
+/*
+ * Overlay for 02_GY521_MPU6050 - core0 (procpu) image
+ *
+ * - I2C0 remapped to SDA=GPIO8 / SCL=GPIO9, per this series' I2C0
+ *   convention. Owned exclusively by core0 in this dual-core layout.
+ * - GY-521 (MPU-6050) address depends on the module's AD0 pin: GND (or
+ *   floating - AD0 has an onboard pull-down on most GY-521 boards)
+ *   gives 0x68, VCC gives 0x69. Confirmed on real hardware with
+ *   lab_tools/i2c0_scanner: this board is wired for 0x68.
+ *
+ *   Rather than hardcoding one address, BOTH candidate nodes are
+ *   declared here (mpu6050_68 and mpu6050_69). Zephyr's mpu6050 driver
+ *   reads the chip's WHO_AM_I register during init() and fails
+ *   (device_is_ready() == false) if nothing responds or the ID
+ *   doesn't match - so whichever address has no real hardware behind
+ *   it simply never becomes ready, and main.c picks whichever one
+ *   did. This makes the firmware work unmodified whether AD0 is wired
+ *   to GND or VCC, without needing a raw I2C bypass.
+ * - Polling mode only (no int-gpios) - CONFIG_MPU6050_TRIGGER_NONE in
+ *   prj.conf. This lab reads via plain sensor_sample_fetch() on a
+ *   timer, not via the sensor's interrupt pin.
+ * - The SSD1306 OLED is NOT on this bus/core - it lives on I2C1,
+ *   owned by core1 (remote/boards/esp32s3_devkitc_esp32s3_appcpu.overlay).
+ * - &ipm0 is this image's half of the core0<->core1 mailbox.
+ *
+ * IMPORTANT: verify the pinctrl macro names and the &ipm0 node name
+ * against your actual west workspace before building.
+ */
+
+#include <dt-bindings/pinctrl/esp32s3-pinctrl.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
+&pinctrl {
+	i2c0_default: i2c0_default {
+		group1 {
+			pinmux = <I2C0_SDA_GPIO8>, <I2C0_SCL_GPIO9>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>; /* 100 kHz */
+
+	mpu6050_68: mpu6050@68 {
+		compatible = "invensense,mpu6050";
+		reg = <0x68>;
+	};
+
+	mpu6050_69: mpu6050@69 {
+		compatible = "invensense,mpu6050";
+		reg = <0x69>;
+	};
+};
+
+&ipm0 {
+	status = "okay";
+};

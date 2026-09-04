@@ -1,0 +1,21 @@
+sample:
+  name: AHT20 + BMP280 dual-core (IPM, threshold+heartbeat) with SSD1306 on core1
+  description: >
+    core0 (procpu) reads AHT20 (temperature + humidity) and BMP280
+    (temperature + pressure) every 100 ms each in its own thread over
+    I2C0. Only AHT20 temperature (>=1C change) and BMP280 pressure
+    (>=10 hPa change) trigger an immediate IPM push to core1; humidity
+    and BMP280 temperature ride along in whichever payload goes out
+    next without triggering one themselves. A 1 s heartbeat thread
+    pushes unconditionally so the link never looks stale during quiet
+    periods. core1 owns I2C1 and an SSD1306 128x64 OLED exclusively,
+    displays all four values plus link health, redraws from an
+    event-driven display thread woken by the IPM callback, and
+    declares the link down after 2 s without a message. Built with
+    --sysbuild.
+tests:
+  sample.sensor.aht20_bmp280_multisensor_dualcore:
+    build_only: true
+    sysbuild: true
+    platform_allow: esp32s3_devkitc/esp32s3/procpu
+    tags: sensor display i2c threads ipm multicore

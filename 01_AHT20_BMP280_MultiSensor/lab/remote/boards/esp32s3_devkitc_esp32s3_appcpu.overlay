@@ -1,0 +1,43 @@
+/*
+ * Overlay for 01_AHT20_BMP280_MultiSensor - core1 (appcpu) image
+ *
+ * - I2C1 (NOT I2C0 - see core0 overlay for why) remapped to
+ *   SDA=GPIO4 / SCL=GPIO5, chosen freely for this lab: not a
+ *   strapping pin (0/3/45/46), not a USB-JTAG pin (19/20), and not
+ *   already used by I2C0 (8/9) on the other core.
+ * - No sensor devicetree nodes here on purpose - core1 never talks to
+ *   AHT20 or BMP280 directly, only to the SSD1306 (probed at runtime
+ *   by src/ssd1306_display.c, not declared as a devicetree node -
+ *   same reasoning as the rest of this display-driver series).
+ * - &ipm0 is this image's half of the core0<->core1 mailbox.
+ *
+ * IMPORTANT: verify the pinctrl macro names (I2C1_SDA_GPIO4 etc.) and
+ * whether &i2c1 needs any additional properties beyond what's here -
+ * this is this lab's first use of I2C1 in the whole curriculum, so
+ * unlike I2C0 there is no prior working overlay to copy from.
+ */
+
+#include <dt-bindings/pinctrl/esp32s3-pinctrl.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
+&pinctrl {
+	i2c1_default: i2c1_default {
+		group1 {
+			pinmux = <I2C1_SDA_GPIO4>, <I2C1_SCL_GPIO5>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-names = "default";
+	clock-frequency = <I2C_BITRATE_STANDARD>; /* 100 kHz */
+};
+
+&ipm0 {
+	status = "okay";
+};

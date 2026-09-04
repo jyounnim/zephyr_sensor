@@ -1,0 +1,59 @@
+/*
+ * Overlay for 01_AHT20_BMP280_MultiSensor - core0 (procpu) image
+ *
+ * - I2C0 remapped to SDA=GPIO8 / SCL=GPIO9, per this series' I2C0
+ *   convention. Owned exclusively by core0 in this dual-core layout.
+ * - AHT20 (0x38) and BMP280 (0x77 on this unit - SDO tied to VDD; see
+ *   the "BMP280 I2C address" note below) both use in-tree Zephyr
+ *   sensor drivers (compatible "aosong,aht20" / "bosch,bme280").
+ * - The SSD1306 OLED is NOT on this bus/core - it lives on I2C1,
+ *   owned by core1 (remote/boards/esp32s3_devkitc_esp32s3_appcpu.overlay).
+ *   Two independent Zephyr images (AMP, not SMP) cannot safely share
+ *   one physical I2C controller, so sensors and display are split
+ *   across ESP32-S3's two I2C peripherals instead.
+ * - &ipm0 is this image's half of the core0<->core1 mailbox used to
+ *   forward sensor snapshots to core1 - see src/main.c for the actual
+ *   send policy (threshold-triggered + 1s heartbeat, not a fixed period).
+ *
+ * IMPORTANT: verify the pinctrl macro names and the &ipm0 node name
+ * against your actual west workspace before building - both are
+ * written from this series' established conventions, not copied from
+ * a file already known to build in this workspace.
+ */
+
+#include <dt-bindings/pinctrl/esp32s3-pinctrl.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
+&pinctrl {
+	i2c0_default: i2c0_default {
+		group1 {
+			pinmux = <I2C0_SDA_GPIO8>, <I2C0_SCL_GPIO9>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>; /* 100 kHz */
+
+	aht20: aht20@38 {
+		compatible = "aosong,aht20";
+		reg = <0x38>;
+	};
+
+	/* Confirmed via lab_tools/i2c0_scanner on real hardware
+	 * (2026-09-04): this module's SDO is tied to VDD, so it
+	 * responds at 0x77, not the more common 0x76 (SDO->GND).
+	 */
+	bmp280: bmp280@77 {
+		compatible = "bosch,bme280";
+		reg = <0x77>;
+	};
+};
+
+&ipm0 {
+	status = "okay";
+};
