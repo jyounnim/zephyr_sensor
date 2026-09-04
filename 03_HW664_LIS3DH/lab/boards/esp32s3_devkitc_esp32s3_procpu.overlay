@@ -1,0 +1,70 @@
+/*
+ * Overlay for 03_HW664_LIS3DH - core0 (procpu) image
+ *
+ * CHIP IDENTITY CORRECTION (2026-09-04): the HW-664 module's silkscreen/
+ * listing claims LIS3DSH, but WHO_AM_I read back 0x33 on real hardware,
+ * not LIS3DSH's fixed 0x3F - 0x33 is the LIS3DH family's WHO_AM_I value.
+ * So this board actually carries an ST LIS3DH (or a register-compatible
+ * sibling: LIS2DH/LIS2DH12/LSM303DLHC/LSM303AGR), not a genuine LIS3DSH.
+ * Zephyr's LIS2DH driver (drivers/sensor/st/lis2dh/lis2dh.c) officially
+ * supports all of these via the "st,lis3dh" compatible, so this lab now
+ * uses the standard Zephyr sensor API instead of the hand-rolled raw-I2C
+ * driver an earlier revision wrote for the (wrong) LIS3DSH assumption.
+ *
+ * DEVICETREE COMPATIBLE GOTCHA (2026-09-04): Zephyr documents a
+ * separate "st,lis3dh" binding, but the actual lis2dh.c driver (the
+ * one that ships in current Zephyr) only instantiates a device for
+ * nodes with compatible = "st,lis2dh" - using "st,lis3dh" compiles
+ * fine but silently produces `#warning "LIS2DH driver enabled without
+ * any devices"` and no device object at all, which shows up at link
+ * time as `undefined reference to __device_dts_ord_N`. This is a
+ * known, filed Zephyr issue (#31253: "lis3dh driver support is
+ * confusing"). So despite the chip being LIS3DH, the compatible
+ * string below must be "st,lis2dh".
+ *
+ * - I2C0 remapped to SDA=GPIO8 / SCL=GPIO9, per this series' I2C0
+ *   convention. Owned exclusively by core0 in this dual-core layout.
+ * - Address depends on SDO/SA0: confirmed on this specific unit,
+ *   unconnected/HIGH -> 0x19, LOW -> 0x18. Both candidate nodes are
+ *   declared here (lis3dh_18, lis3dh_19); Zephyr's lis2dh driver reads
+ *   WHO_AM_I during init() and fails device_is_ready() for whichever
+ *   address has no real hardware behind it - same auto-detect pattern
+ *   as Lab 02's MPU6050 dual-node trick.
+ * - The SSD1306 OLED is NOT on this bus/core - it lives on I2C1,
+ *   owned by core1.
+ * - &ipm0 is this image's half of the core0<->core1 mailbox.
+ */
+
+#include <dt-bindings/pinctrl/esp32s3-pinctrl.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
+&pinctrl {
+	i2c0_default: i2c0_default {
+		group1 {
+			pinmux = <I2C0_SDA_GPIO8>, <I2C0_SCL_GPIO9>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>; /* 100 kHz */
+
+	lis3dh_18: lis3dh@18 {
+		compatible = "st,lis2dh"; /* driver quirk - see header comment above */
+		reg = <0x18>;
+	};
+
+	lis3dh_19: lis3dh@19 {
+		compatible = "st,lis2dh"; /* driver quirk - see header comment above */
+		reg = <0x19>;
+	};
+};
+
+&ipm0 {
+	status = "okay";
+};
+
