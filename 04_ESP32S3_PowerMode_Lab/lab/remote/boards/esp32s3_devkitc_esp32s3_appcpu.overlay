@@ -1,0 +1,65 @@
+/*
+ * Overlay for Lab 04 Power Mode - core1 (appcpu) image.
+ *
+ * I2C1 (SDA=GPIO4 / SCL=GPIO5) drives the SSD1306 OLED, matching this
+ * series' convention that core1 owns a physically separate I2C
+ * controller from core0's sensor bus.
+ *
+ * oled-pwr (GPIO0 pin 6) fully power-gates the OLED module's own VCC
+ * line (through an external transistor/load switch on the breadboard -
+ * HIGH = powered, LOW = cut), so Sleep/Ultra-Sleep's power saving is a
+ * real hardware power-off of the display, not just a blanked screen.
+ *
+ * BUILD FIX (confirmed on real hardware): a devicetree node needs a
+ * matched binding (a "compatible" with a real YAML schema) for Zephyr
+ * to generate ANY property accessor macros for it, including a plain
+ * "gpios" phandle-array - a bindingless node compiles the DTS/overlay
+ * fine but fails later at C build time with an undeclared
+ * "DT_N_..._P_gpios_..." macro from GPIO_DT_SPEC_GET(). The standard
+ * fix for an ad-hoc GPIO output with no real driver behind it is the
+ * in-tree "gpio-leds" binding, which exists exactly for this case:
+ * declare a "gpio-leds" parent node and put the pin under it as a
+ * child (no "compatible" needed on the child).
+ *
+ * &ipm0 is this image's half of the core0<->core1 mailbox.
+ */
+
+#include <dt-bindings/pinctrl/esp32s3-pinctrl.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	aliases {
+		oled-pwr = &oled_power_pin;
+	};
+
+	oled_pwr_ctrl {
+		compatible = "gpio-leds";
+
+		oled_power_pin: oled_power_pin {
+			gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+&pinctrl {
+	i2c1_default: i2c1_default {
+		group1 {
+			pinmux = <I2C1_SDA_GPIO4>, <I2C1_SCL_GPIO5>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-names = "default";
+	clock-frequency = <I2C_BITRATE_STANDARD>; /* 100 kHz */
+};
+
+&ipm0 {
+	status = "okay";
+};

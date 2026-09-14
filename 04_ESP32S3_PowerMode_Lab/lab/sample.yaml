@@ -1,0 +1,20 @@
+sample:
+  name: ESP32-S3 Power Mode lab (HW-664/LIS3DH + SSD1306, dual-core AMP)
+  description: >
+    core0 (procpu) reads the HW-664 accelerometer (actual chip: ST
+    LIS3DH) over I2C0 every 100 ms using Zephyr's standard sensor API,
+    auto-selecting whichever of the two candidate addresses (0x18/0x19)
+    responds. It runs a 3-state power policy - Normal, Sleep, and
+    Ultra-Sleep - driven by the onboard Boot button and by accel delta
+    events (>=0.15g), and reports state/data to core1 over IPM. core1
+    (appcpu) owns I2C1 and a power-gated SSD1306 128x64 OLED (a
+    dedicated GPIO cuts the panel's own power rail in Sleep/Ultra-Sleep,
+    not just a blanked screen), auto-scanning the panel's address
+    (0x3C/0x3D) every time it (re)initializes. Declares the link down
+    if no data arrives for 3 missed 1 s cycles. Built with --sysbuild.
+tests:
+  sample.sensor.esp32s3_powermode_dualcore:
+    build_only: true
+    sysbuild: true
+    platform_allow: esp32s3_devkitc/esp32s3/procpu
+    tags: sensor display i2c threads ipm multicore power-management

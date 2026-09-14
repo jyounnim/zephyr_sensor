@@ -1,0 +1,11 @@
+{
+    "terminal.integrated.env.windows": {
+        "Path": "d:\\work\\SRSDK_Build_tools\\LLVM\\bin;d:\\work\\SRSDK_Build_tools\\Python313\\;d:\\work\\SRSDK_Build_tools\\Python313\\Scripts\\;d:\\work\\SRSDK_Build_tools\\OpenOCD\\xpack-openocd-0.12.0-4\\bin;d:\\work\\SRSDK_Build_tools\\git\\cmd;d:\\work\\SRSDK_Build_tools\\git\\bin;d:\\work\\SRSDK_Build_tools\\CMake\\cmake-4.1.2-windows-x86_64\\bin;d:\\work\\SRSDK_Build_tools\\msys64\\usr\\bin;d:\\work\\SRSDK_Build_tools\\Ninja;d:\\work\\SRSDK_Build_tools\\Arm GNU Toolchain arm-none-eabi\\bin;C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer\\Git\\cmd;${env:PATH}",
+        "GCC_TOOLCHAIN_13_2_1": "d:\\work\\SRSDK_Build_tools\\Arm GNU Toolchain arm-none-eabi\\bin",
+        "GCC_TOOLCHAIN_ROOT": "d:\\work\\SRSDK_Build_tools\\Arm GNU Toolchain arm-none-eabi",
+        "OPENOCD_PATH": "d:\\work\\SRSDK_Build_tools\\OpenOCD\\xpack-openocd-0.12.0-4\\bin",
+        "LLVM_TOOLCHAIN_ROOT": "d:\\work\\SRSDK_Build_tools\\LLVM\\bin",
+        "SRSDK_DIR": "d:\\work\\srsdk"
+    },
+    "cmake.sourceDirectory": "D:/work/ESP32-S3/GitHub/zephyr_sensor/04_ESP32S3_PowerMode_Lab/lab"
+}

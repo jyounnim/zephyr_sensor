@@ -1,0 +1,60 @@
+/*
+ * Overlay for Lab 04 Power Mode - core0 (procpu) image.
+ *
+ * CHIP IDENTITY (confirmed on real hardware, this series' Lab 03):
+ * the HW-664 module's silkscreen/listing claims LIS3DSH, but WHO_AM_I
+ * read back 0x33, which is the LIS3DH family's value (LIS3DSH's fixed
+ * WHO_AM_I is 0x3F). Zephyr's LIS2DH driver (drivers/sensor/st/lis2dh)
+ * supports this chip family, but ONLY instantiates a device for nodes
+ * whose compatible is "st,lis2dh" - the documented-looking "st,lis3dh"
+ * compatible compiles but silently produces no device object (known
+ * Zephyr issue #31253). So despite the chip being LIS3DH, the
+ * compatible string below must be "st,lis2dh".
+ *
+ * - I2C0 remapped to SDA=GPIO8 / SCL=GPIO9, per this series' I2C0
+ *   convention. Owned exclusively by core0 in this dual-core layout.
+ * - Address depends on the module's SDO/SA0 pin: tied to GND -> 0x18,
+ *   left unconnected/HIGH -> 0x19 (this is the module's default).
+ *   Both candidate nodes are declared here; Zephyr's lis2dh driver
+ *   reads WHO_AM_I during init() and fails device_is_ready() for
+ *   whichever address has no real hardware behind it, so main.c just
+ *   tries 0x18 then 0x19 at boot (same auto-detect pattern as this
+ *   series' Lab 02 MPU6050 dual-node trick).
+ * - The SSD1306 OLED and its power-gate GPIO are NOT on this image -
+ *   they belong entirely to core1 (I2C1), see lab/remote's overlay.
+ * - &ipm0 is this image's half of the core0<->core1 mailbox.
+ */
+
+#include <dt-bindings/pinctrl/esp32s3-pinctrl.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
+&pinctrl {
+	i2c0_default: i2c0_default {
+		group1 {
+			pinmux = <I2C0_SDA_GPIO8>, <I2C0_SCL_GPIO9>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>; /* 100 kHz */
+
+	lis3dh_18: lis3dh@18 {
+		compatible = "st,lis2dh"; /* driver quirk - see header comment above */
+		reg = <0x18>;
+	};
+
+	lis3dh_19: lis3dh@19 {
+		compatible = "st,lis2dh"; /* driver quirk - see header comment above */
+		reg = <0x19>;
+	};
+};
+
+&ipm0 {
+	status = "okay";
+};
+
